@@ -10,13 +10,11 @@ import SwiftUI
 @main
 struct ZapNTapApp: App {
     let persistenceController = PersistenceController.shared
-    @StateObject private var viewModel = ChargingSessionViewModel()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(context: persistenceController.container.viewContext)
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(viewModel)
         }
     }
 }
