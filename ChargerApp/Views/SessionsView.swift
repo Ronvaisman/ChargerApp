@@ -107,13 +107,22 @@ struct SessionDetailView: View {
     
     var shareMessage: String {
         """
-        EV Charging Session - \(session.formattedDate)
-        Previous Reading: \(Int(session.previousReading)) kWh
-        New Reading: \(Int(session.newReading)) kWh
-        Energy Used: \(session.formattedKWh)
-        Cost: \(session.formattedCost)
-        Status: \(session.isPaid ? "Paid" : "Unpaid")
+        \(NSLocalizedString("EV Charging Session", comment: "")) - \(session.formattedDate)
+        \(NSLocalizedString("Previous Reading:", comment: "")) \(Int(session.previousReading)) \(NSLocalizedString("kWh", comment: ""))
+        \(NSLocalizedString("New Reading:", comment: "")) \(Int(session.newReading)) \(NSLocalizedString("kWh", comment: ""))
+        \(NSLocalizedString("Energy Used:", comment: "")) \(session.formattedKWh)
+        \(NSLocalizedString("Cost:", comment: "")) \(session.formattedCost)
+        \(NSLocalizedString("Status:", comment: "")) \(NSLocalizedString(session.isPaid ? "Paid" : "Unpaid", comment: ""))
         """
+    }
+    
+    var shareItems: [Any] {
+        var items: [Any] = [shareMessage]
+        if let photoURL = session.photoURL,
+           let image = UIImage(contentsOfFile: photoURL.path) {
+            items.append(image)
+        }
+        return items
     }
     
     var body: some View {
@@ -124,18 +133,19 @@ struct SessionDetailView: View {
                     Text(session.formattedDate)
                         .font(.title2)
                         .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     
                     // Meter Readings
                     VStack(spacing: 10) {
                         HStack {
-                            Text("Previous Reading:")
+                            Text(LocalizedStringKey("Previous Reading:"))
                             Spacer()
                             Text(String(format: "%.0f kWh", session.previousReading))
                                 .fontWeight(.medium)
                         }
                         
                         HStack {
-                            Text("New Reading:")
+                            Text(LocalizedStringKey("New Reading:"))
                             Spacer()
                             Text(String(format: "%.0f kWh", session.newReading))
                                 .fontWeight(.medium)
@@ -144,14 +154,14 @@ struct SessionDetailView: View {
                         Divider()
                         
                         HStack {
-                            Text("Energy Used:")
+                            Text(LocalizedStringKey("Energy Used:"))
                             Spacer()
                             Text(session.formattedKWh)
                                 .fontWeight(.bold)
                         }
                         
                         HStack {
-                            Text("Cost:")
+                            Text(LocalizedStringKey("Cost:"))
                             Spacer()
                             Text(session.formattedCost)
                                 .fontWeight(.bold)
@@ -163,9 +173,9 @@ struct SessionDetailView: View {
                     
                     // Payment Status
                     HStack {
-                        Text("Status:")
+                        Text(LocalizedStringKey("Status:"))
                         Spacer()
-                        Text(session.isPaid ? "Paid" : "Unpaid")
+                        Text(LocalizedStringKey(session.isPaid ? "Paid" : "Unpaid"))
                             .foregroundColor(session.isPaid ? .green : .orange)
                             .fontWeight(.medium)
                     }
@@ -186,11 +196,12 @@ struct SessionDetailView: View {
                     // Notes
                     VStack(alignment: .leading) {
                         HStack {
-                            Text("Notes")
+                            Text(LocalizedStringKey("Notes"))
                                 .font(.headline)
+                                .frame(maxWidth: .infinity, alignment: .center)
                             Spacer()
                             Button(action: { isEditingNotes.toggle() }) {
-                                Text(isEditingNotes ? "Done" : "Edit")
+                                Text(LocalizedStringKey(isEditingNotes ? "Done" : "Edit"))
                             }
                         }
                         
@@ -203,8 +214,9 @@ struct SessionDetailView: View {
                                     viewModel.updateNotes(for: session, notes: notes)
                                 }
                         } else {
-                            Text(notes.isEmpty ? "No notes" : notes)
+                            Text(LocalizedStringKey(notes.isEmpty ? "No notes" : notes))
                                 .foregroundColor(notes.isEmpty ? .secondary : .primary)
+                                .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                     .padding()
@@ -234,7 +246,7 @@ struct SessionDetailView: View {
                 presentationMode.wrappedValue.dismiss()
             })
             .sheet(isPresented: $showingShareSheet) {
-                ShareSheet(activityItems: [shareMessage])
+                ShareSheet(activityItems: shareItems)
             }
         }
     }

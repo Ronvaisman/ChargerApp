@@ -14,6 +14,10 @@
 // Tabs
 "Usage" = "שימוש";
 "Analytics" = "ניתוח נתונים";
+"Sessions" = "היסטוריה";
+
+// Session Sharing
+"EV Charging Session" = "טעינת רכב חשמלי";
 
 // Settings
 "Settings" = "הגדרות";
@@ -37,7 +41,6 @@
 "Take a clear photo of your meter reading" = "צלם תמונה ברורה של קריאת המונה";
 
 // Sessions
-"Sessions" = "סשנים";
 "Paid" = "שולם";
 "Unpaid" = "לא שולם";
 "Mark Paid" = "סמן כשולם";
@@ -49,12 +52,12 @@
 "Session Details" = "פרטי סשן";
 "Previous Reading:" = "קריאה קודמת:";
 "New Reading:" = "קריאה חדשה:";
-"Energy Used:" = "צריכת אנרגיה:";
+"Energy Used:" = "צריכת חשמל:";
 "Cost:" = "עלות:";
 "Status:" = "סטטוס:";
 "Notes" = "הערות";
 "No notes" = "אין הערות";
-"Share Session Details" = "שיתוף פרטי סשן";
+"Share Session Details" = "שיתוף פרטי שימוש";
 
 // Camera
 "Meter Photo" = "תמונת מונה";
@@ -63,4 +66,10 @@
 "Make sure the numbers are clearly visible and well-lit" = "ודא שהמספרים נראים בבירור ובתאורה טובה";
 "Use Photo" = "השתמש בתמונה";
 "Camera Access Required" = "נדרש גישה למצלמה";
-"Please allow camera access in Settings to take photos of your meter readings." = "אנא אפשר גישה למצלמה בהגדרות כדי לצלם את קריאות המונה."; 
+"Please allow camera access in Settings to take photos of your meter readings." = "אנא אפשר גישה למצלמה בהגדרות כדי לצלם את קריאות המונה.";
+
+// Date Format
+"Today" = "היום";
+"Yesterday" = "אתמול";
+"kWh" = "קוט״ש";
+"ILS" = "₪"; 
