@@ -10,6 +10,7 @@
 "Delete" = "Delete";
 "Edit" = "Edit";
 "Share" = "Share";
+"Rotate" = "Rotate";
 
 // New Session
 "Electricity Usage & Payment" = "Electricity Usage & Payment";
@@ -50,4 +51,6 @@
 "Use Photo" = "Use Photo";
 "Camera Access Required" = "Camera Access Required";
 "Please allow camera access in Settings to take photos of your meter readings." = "Please allow camera access in Settings to take photos of your meter readings.";
-"Settings" = "Settings"; 
+"Settings" = "Settings";
+"OCR Reading:" = "OCR Reading:";
+"Failed to read meter: %@" = "Failed to read meter: %@"; 

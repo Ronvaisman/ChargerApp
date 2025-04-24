@@ -3,15 +3,28 @@ import SwiftUI
 struct NewSessionView: View {
     @ObservedObject var viewModel: ChargingSessionViewModel
     @State private var newReading: String = ""
+    @State private var previousReadingInput: String = ""
     @State private var showingCameraHandler = false
     @State private var selectedImage: UIImage?
     @State private var showingCalculation = false
     @State private var calculatedKwh: Double = 0
     @State private var calculatedCost: Double = 0
+    @State private var isProcessingOCR = false
     @FocusState private var isInputActive: Bool
     
+    private var shouldShowPreviousReadingInput: Bool {
+        return viewModel.sessions.isEmpty
+    }
+    
     private var previousReading: Double {
-        viewModel.sessions.first?.newReading ?? 0
+        if viewModel.sessions.isEmpty {
+            if !previousReadingInput.isEmpty {
+                let value = Double(previousReadingInput.replacingOccurrences(of: ",", with: "")) ?? 0
+                return value
+            }
+            return 0
+        }
+        return viewModel.sessions.first?.newReading ?? 0
     }
     
     var body: some View {
@@ -31,12 +44,27 @@ struct NewSessionView: View {
                             VStack(alignment: .center) {
                                 Text(LocalizedStringKey("Previous Meter"))
                                     .font(.subheadline)
-                                Text("\(Int(previousReading))")
-                                    .font(.system(size: 32, weight: .bold))
-                                    .frame(width: 120, alignment: .center)
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(10)
+                                if shouldShowPreviousReadingInput {
+                                    TextField("Previous Reading", text: $previousReadingInput)
+                                        .font(.system(size: 16, weight: .bold))
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.center)
+                                        .frame(width: 120, height: 50)
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(10)
+                                        .focused($isInputActive)
+                                        .onAppear {
+                                            previousReadingInput = "0"
+                                        }
+                                } else {
+                                    Text(String(format: "%.2f", previousReading))
+                                        .font(.system(size: 16, weight: .bold))
+                                        .frame(width: 120, height: 50)
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(10)
+                                }
                             }
                             .frame(maxWidth: .infinity)
                             
@@ -45,9 +73,9 @@ struct NewSessionView: View {
                                     .font(.subheadline)
                                 TextField("New Reading", text: $newReading)
                                     .font(.system(size: 16, weight: .bold))
-                                    .keyboardType(.numberPad)
+                                    .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.center)
-                                    .frame(width: 120)
+                                    .frame(width: 120, height: 50)
                                     .padding()
                                     .background(Color(.systemGray6))
                                     .cornerRadius(10)
@@ -151,6 +179,10 @@ struct NewSessionView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isInputActive = false
+            }
         }
         .sheet(isPresented: $showingCameraHandler) {
             CameraHandler(selectedImage: $selectedImage)
@@ -168,7 +200,8 @@ struct NewSessionView: View {
     }
     
     private func calculateUsage() {
-        guard let newReadingValue = Double(newReading) else {
+        let cleanNewReading = newReading.replacingOccurrences(of: ",", with: "")
+        guard let newReadingValue = Double(cleanNewReading) else {
             viewModel.errorMessage = "Please enter a valid number"
             return
         }
@@ -184,7 +217,8 @@ struct NewSessionView: View {
     }
     
     private func saveSession() {
-        guard let newReadingValue = Double(newReading) else { return }
+        let cleanNewReading = newReading.replacingOccurrences(of: ",", with: "")
+        guard let newReadingValue = Double(cleanNewReading) else { return }
         
         // Save image if exists
         var photoURL: URL?
@@ -205,6 +239,7 @@ struct NewSessionView: View {
         // Reset form after a short delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             newReading = ""
+            previousReadingInput = ""
             selectedImage = nil
             showingCalculation = false
             viewModel.errorMessage = nil
@@ -223,6 +258,27 @@ struct NewSessionView: View {
         } catch {
             viewModel.errorMessage = "Failed to save image: \(error.localizedDescription)"
             return nil
+        }
+    }
+    
+    private func processImageOCR(_ image: UIImage) {
+        isProcessingOCR = true
+        OCRService.extractMeterReading(from: image) { result in
+            DispatchQueue.main.async {
+                isProcessingOCR = false
+                switch result {
+                case .success(let reading):
+                    newReading = String(format: "%.0f", reading)
+                    calculateUsage()
+                case .failure(let error):
+                    // Only show error message if it's not a "no reading found" error
+                    if case .noValidReading = error {
+                        // Silently ignore when no reading is found
+                        return
+                    }
+                    viewModel.errorMessage = String(format: NSLocalizedString("Failed to read meter: %@", comment: ""), error.localizedDescription)
+                }
+            }
         }
     }
 }

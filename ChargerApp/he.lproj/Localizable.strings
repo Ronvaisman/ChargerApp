@@ -10,6 +10,7 @@
 "Delete" = "מחיקה";
 "Edit" = "עריכה";
 "Share" = "שיתוף";
+"Rotate" = "סיבוב";
 
 // App Title
 "EV Charging Payment" = "תשלום טעינת רכב חשמלי";
@@ -72,6 +73,11 @@
 "Camera Access Required" = "נדרש גישה למצלמה";
 "Please allow camera access in Settings to take photos of your meter readings." = "אנא אפשר גישה למצלמה בהגדרות כדי לצלם את קריאות המונה.";
 
+// Image Cropping
+"Select Reading Area" = "בחר אזור קריאה";
+"Select Meter Reading Area" = "בחר את אזור קריאת המונה";
+"Crop" = "חתוך";
+
 // Date Format
 "Today" = "היום";
 "Yesterday" = "אתמול";
@@ -87,4 +93,11 @@
 "Notes:" = "הערות:";
 
 // System
-"LOCALE" = "he_IL"; 
+"LOCALE" = "he_IL";
+
+/* Empty state messages */
+"No Charging Sessions" = "אין היסטוריית טעינה";
+"Your charging history will appear here" = "היסטוריית הטעינה שלך תופיע כאן";
+
+"OCR Reading:" = "קריאת OCR:";
+"Failed to read meter: %@" = "נכשל בקריאת המונה: %@"; 

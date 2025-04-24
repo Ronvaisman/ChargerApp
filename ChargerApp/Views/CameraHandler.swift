@@ -8,7 +8,9 @@ struct CameraHandler: View {
     @State private var showingImagePicker = false
     @State private var showingCamera = false
     @State private var showingPermissionAlert = false
+    @State private var showingImageEditor = false
     @State private var sourceType: UIImagePickerController.SourceType = .camera
+    @State private var editedImage: UIImage?
     
     var body: some View {
         NavigationView {
@@ -21,6 +23,19 @@ struct CameraHandler: View {
                         .frame(maxHeight: 300)
                         .cornerRadius(10)
                         .padding()
+                    
+                    // Edit Photo button
+                    Button(action: {
+                        showingImageEditor = true
+                    }) {
+                        Label("Edit", systemImage: "crop")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
                     
                     // Retake/Choose Different Photo button
                     Button(action: {
@@ -98,6 +113,11 @@ struct CameraHandler: View {
         }
         .sheet(isPresented: $showingCamera) {
             ImagePicker(image: $selectedImage, sourceType: .camera)
+        }
+        .sheet(isPresented: $showingImageEditor) {
+            if let image = selectedImage {
+                ImageEditorView(image: $selectedImage)
+            }
         }
         .alert("Camera Access Required", isPresented: $showingPermissionAlert) {
             Button("Cancel", role: .cancel) { }

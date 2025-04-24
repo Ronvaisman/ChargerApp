@@ -11,6 +11,7 @@ class ChargingSessionViewModel: ObservableObject {
     // Default electricity rate as specified in PRD
     private let defaultRate: Double = 0.6402
     @AppStorage("electricityRate") var electricityRate: Double = 0.6402
+    @AppStorage("defaultPreviousReading") var defaultPreviousReading: Double = 0.0
     
     init(context: NSManagedObjectContext) {
         print("Initializing ChargingSessionViewModel")
@@ -207,5 +208,16 @@ class ChargingSessionViewModel: ObservableObject {
         } catch {
             errorMessage = "Failed to remove photo: \(error.localizedDescription)"
         }
+    }
+    
+    func saveDefaultPreviousReading(_ reading: Double) {
+        print("Saving default previous reading: \(reading)")
+        if reading > 0 {
+            defaultPreviousReading = reading
+        }
+    }
+    
+    func getDefaultPreviousReading() -> Double {
+        return defaultPreviousReading
     }
 } 

@@ -5,6 +5,7 @@ struct SettingsView: View {
     @State private var rateString: String = ""
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @FocusState private var isInputActive: Bool
     
     var body: some View {
         NavigationView {
@@ -17,6 +18,7 @@ struct SettingsView: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
+                            .focused($isInputActive)
                             .onAppear {
                                 rateString = String(format: "%.4f", electricityRate)
                             }
@@ -29,6 +31,7 @@ struct SettingsView: View {
                             if newRate > 0 {
                                 electricityRate = newRate
                                 alertMessage = "Rate updated successfully"
+                                isInputActive = false
                             } else {
                                 alertMessage = "Rate must be greater than 0"
                             }
@@ -55,6 +58,7 @@ struct SettingsView: View {
                             rateString = "0.6402"
                             alertMessage = "Rate reset to default value"
                             showingAlert = true
+                            isInputActive = false
                         }
                     }
                 }
@@ -67,6 +71,18 @@ struct SettingsView: View {
             }
             .navigationTitle(Text(LocalizedStringKey("EV Charging Payment")))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isInputActive = false
+                    }
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isInputActive = false
+            }
             .alert("Settings", isPresented: $showingAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
