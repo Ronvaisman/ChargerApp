@@ -6,5 +6,9 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to take photos of your meter readings.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to select photos of your meter readings.</string>
 </dict>
 </plist>
