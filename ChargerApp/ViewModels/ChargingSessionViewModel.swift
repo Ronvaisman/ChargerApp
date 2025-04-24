@@ -13,23 +13,65 @@ class ChargingSessionViewModel: ObservableObject {
     @AppStorage("electricityRate") var electricityRate: Double = 0.6402
     
     init(context: NSManagedObjectContext) {
+        print("Initializing ChargingSessionViewModel")
         self.context = context
         fetchSessions()
     }
     
     func fetchSessions() {
+        print("Fetching sessions...")
         let request = NSFetchRequest<ChargingSession>(entityName: "ChargingSession")
         request.sortDescriptors = [NSSortDescriptor(keyPath: \ChargingSession.timestamp, ascending: false)]
         
         do {
             sessions = try context.fetch(request)
             print("Fetched \(sessions.count) sessions")
-            for session in sessions {
-                print("Session: \(session.formattedDate), Paid: \(session.isPaid)")
+            for (index, session) in sessions.enumerated() {
+                print("Session \(index): ID: \(session.id?.uuidString ?? "nil"), Date: \(session.formattedDate), kWh: \(session.kwhUsed), Cost: \(session.cost), isPaid: \(session.isPaid)")
             }
         } catch {
+            print("Error fetching sessions: \(error)")
             errorMessage = "Failed to fetch sessions: \(error.localizedDescription)"
         }
+    }
+    
+    // Add debug method to validate session
+    func validateSession(_ session: ChargingSession) -> Bool {
+        print("Validating session: \(session.formattedDate)")
+        print("Session data:")
+        print("- ID: \(session.id?.uuidString ?? "nil")")
+        print("- Previous Reading: \(session.previousReading)")
+        print("- New Reading: \(session.newReading)")
+        print("- kWh Used: \(session.kwhUsed)")
+        print("- Cost: \(session.cost)")
+        print("- isPaid: \(session.isPaid)")
+        print("- Has Photo: \(session.photoURL != nil)")
+        print("- Notes: \(session.notes ?? "nil")")
+        
+        // Validate essential properties
+        guard session.id != nil else {
+            print("❌ Session validation failed: Missing ID")
+            return false
+        }
+        guard session.timestamp != nil else {
+            print("❌ Session validation failed: Missing timestamp")
+            return false
+        }
+        guard session.newReading > session.previousReading else {
+            print("❌ Session validation failed: Invalid readings")
+            return false
+        }
+        guard session.kwhUsed > 0 else {
+            print("❌ Session validation failed: Invalid kWh")
+            return false
+        }
+        guard session.cost > 0 else {
+            print("❌ Session validation failed: Invalid cost")
+            return false
+        }
+        
+        print("✅ Session validation passed")
+        return true
     }
     
     func calculateUsage(previousReading: Double, newReading: Double) -> (kwhUsed: Double, cost: Double)? {
@@ -66,19 +108,27 @@ class ChargingSessionViewModel: ObservableObject {
         }
     }
     
+    // Modify existing methods to include validation
     func togglePaidStatus(for session: ChargingSession) {
         print("Toggling paid status for session: \(session.formattedDate)")
-        print("Current status: \(session.isPaid)")
+        guard validateSession(session) else {
+            errorMessage = "Invalid session data"
+            return
+        }
         
         session.isPaid.toggle()
-        
+        saveContext()
+    }
+    
+    private func saveContext() {
         do {
+            print("Saving context...")
             try context.save()
-            print("Saved new status: \(session.isPaid)")
+            print("Context saved successfully")
             fetchSessions()
         } catch {
-            errorMessage = "Failed to update payment status: \(error.localizedDescription)"
-            print("Error saving status: \(error.localizedDescription)")
+            print("Error saving context: \(error)")
+            errorMessage = "Failed to save: \(error.localizedDescription)"
         }
     }
     

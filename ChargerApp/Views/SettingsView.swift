@@ -65,7 +65,8 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(Text(LocalizedStringKey("EV Charging Payment")))
+            .navigationBarTitleDisplayMode(.inline)
             .alert("Settings", isPresented: $showingAlert) {
                 Button("OK", role: .cancel) { }
             } message: {

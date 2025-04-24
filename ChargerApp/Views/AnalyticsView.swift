@@ -126,7 +126,8 @@ struct AnalyticsView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("Analytics")
+            .navigationTitle(Text(LocalizedStringKey("EV Charging Payment")))
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
     

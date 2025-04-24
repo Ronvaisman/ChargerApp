@@ -11,6 +11,9 @@
 "Edit" = "עריכה";
 "Share" = "שיתוף";
 
+// App Title
+"EV Charging Payment" = "תשלום טעינת רכב חשמלי";
+
 // Tabs
 "Usage" = "שימוש";
 "Analytics" = "ניתוח נתונים";
@@ -32,6 +35,7 @@
 // New Session
 "Electricity Usage & Payment" = "צריכת חשמל ותשלום";
 "Previous Meter" = "מונה קודם";
+"New Meter" = "מונה חדש";
 "New Reading" = "קריאה חדשה";
 "Session kWh = (New Meter - Previous Meter) × 0.402" = "קוט\"ש = (קריאה חדשה - מונה קודם) × 0.402";
 "Calculate" = "חישוב";

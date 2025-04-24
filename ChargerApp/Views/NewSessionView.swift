@@ -19,17 +19,17 @@ struct NewSessionView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Header
-                    Text("Electricity Usage & Payment")
+                    Text(LocalizedStringKey("EV Charging Payment"))
                         .font(.title)
                         .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.horizontal)
                     
                     // Meter readings section
-                    VStack(alignment: .leading, spacing: 15) {
+                    VStack(alignment: .center, spacing: 15) {
                         HStack {
                             VStack(alignment: .center) {
-                                Text("Previous Meter")
+                                Text(LocalizedStringKey("Previous Meter"))
                                     .font(.subheadline)
                                 Text("\(Int(previousReading))")
                                     .font(.system(size: 32, weight: .bold))
@@ -41,7 +41,7 @@ struct NewSessionView: View {
                             .frame(maxWidth: .infinity)
                             
                             VStack(alignment: .center) {
-                                Text("New Meter")
+                                Text(LocalizedStringKey("New Meter"))
                                     .font(.subheadline)
                                 TextField("New Reading", text: $newReading)
                                     .font(.system(size: 16, weight: .bold))
@@ -57,9 +57,10 @@ struct NewSessionView: View {
                         }
                         .padding(.horizontal)
                         
-                        Text("Session kWh = (New Meter - Previous Meter) × 0.402")
+                        Text(LocalizedStringKey("Session kWh = (New Meter - Previous Meter) × 0.402"))
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal)
                     }
                     

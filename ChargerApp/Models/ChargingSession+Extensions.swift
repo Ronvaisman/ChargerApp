@@ -36,4 +36,13 @@ extension ChargingSession {
     var formattedKWh: String {
         return String(format: "%.1f %@", kwhUsed, NSLocalizedString("kWh", comment: ""))
     }
+    
+    // Computed property for formatted date for sharing
+    var formattedDateForSharing: String {
+        guard let timestamp = timestamp else { return NSLocalizedString("Unknown Date", comment: "") }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yy HH:mm"
+        formatter.locale = Locale(identifier: NSLocalizedString("LOCALE", comment: ""))
+        return formatter.string(from: timestamp)
+    }
 } 
