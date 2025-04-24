@@ -63,7 +63,14 @@ struct NewSessionView: View {
     @State private var calculatedKwh: Double = 0
     @State private var calculatedCost: Double = 0
     @State private var showingFullScreenPhoto = false
-    @FocusState private var isInputActive: Bool
+    @State private var showingSaveConfirmation = false
+    @State private var isValidationError = false
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case previousReading
+        case newReading
+    }
     
     private var shouldShowPreviousReadingInput: Bool {
         return viewModel.sessions.isEmpty
@@ -82,22 +89,44 @@ struct NewSessionView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                mainContent
-            }
-            .scrollDismissesKeyboard(.immediately)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        isInputActive = false
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                
+                ScrollView {
+                    VStack(spacing: 30) {
+                        headerSection
+                        meterReadingsSection
+                        buttonSection
+                        if showingCalculation { calculationSection }
+                        photoInstructionText
+                        if let image = selectedImage {
+                            photoPreviewSection(image)
+                        }
                     }
+                    .padding(.vertical, 30)
+                }
+                .onTapGesture {
+                    focusedField = nil // This will dismiss the keyboard
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isInputActive = false
+            .onChange(of: focusedField) { _ in
+                validateInputs()
+            }
+            .alert(item: Binding(
+                get: { viewModel.errorMessage.map { ErrorWrapper(error: $0, isError: $0.contains("Error") || $0.contains("Failed")) } },
+                set: { _ in viewModel.errorMessage = nil }
+            )) { errorWrapper in
+                Alert(
+                    title: Text(errorWrapper.isError ? "Error" : "Success"),
+                    message: Text(errorWrapper.error),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+            .overlay {
+                if showingSaveConfirmation {
+                    SaveConfirmationBanner()
+                }
             }
         }
         .sheet(isPresented: $showingCamera) {
@@ -106,181 +135,197 @@ struct NewSessionView: View {
         .sheet(isPresented: $showingImagePicker) {
             PhotoPicker(image: $selectedImage)
         }
-        .alert(item: Binding(
-            get: { viewModel.errorMessage.map { ErrorWrapper(error: $0, isError: $0.contains("Error") || $0.contains("Failed")) } },
-            set: { _ in viewModel.errorMessage = nil }
-        )) { errorWrapper in
-            Alert(
-                title: Text(errorWrapper.isError ? "Error" : "Success"),
-                message: Text(errorWrapper.error),
-                dismissButton: .default(Text("OK"))
-            )
-        }
-    }
-    
-    private var mainContent: some View {
-        VStack(spacing: 30) {
-            headerSection
-            meterReadingsSection
-            topButtonRow
-            if showingCalculation { calculationSection }
-            photoSection
-            saveButton
-                .padding(.horizontal, 10)
-                .padding(.top, 10)
-        }
-        .padding(.vertical, 30)
     }
     
     private var headerSection: some View {
-        Text(LocalizedStringKey("EV Charging Payment"))
+        Text("EV Charging Payment")
             .font(.title)
             .fontWeight(.bold)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
     }
     
     private var meterReadingsSection: some View {
-        VStack(alignment: .center, spacing: 15) {
-            HStack {
-                VStack(alignment: .center) {
-                    Text(LocalizedStringKey("Previous Meter"))
-                        .font(.subheadline)
+        VStack(spacing: 20) {
+            HStack(spacing: 20) {
+                VStack(spacing: 8) {
+                    Text("Previous Meter")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+                    
                     if shouldShowPreviousReadingInput {
-                        TextField("Previous Reading", text: $previousReadingInput)
-                            .font(.system(size: 16, weight: .bold))
-                            .keyboardType(.decimalPad)
+                        TextField("0", text: $previousReadingInput)
+                            .font(.system(size: 34, weight: .regular))
+                            .foregroundColor(.white)
                             .multilineTextAlignment(.center)
-                            .frame(width: 120, height: 50)
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                            .focused($isInputActive)
-                            .onAppear {
-                                previousReadingInput = "0"
-                            }
+                            .keyboardType(.decimalPad)
+                            .focused($focusedField, equals: .previousReading)
+                            .frame(height: 60)
+                            .background(Color(white: 0.15))
+                            .cornerRadius(12)
                     } else {
-                        Text(String(format: "%.2f", previousReading))
-                            .font(.system(size: 16, weight: .bold))
-                            .frame(width: 120, height: 50)
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                        Text(String(format: "%.0f", previousReading))
+                            .font(.system(size: 34, weight: .regular))
+                            .foregroundColor(.white)
+                            .frame(height: 60)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(white: 0.15))
+                            .cornerRadius(12)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 
-                VStack(alignment: .center) {
-                    Text(LocalizedStringKey("New Meter"))
-                        .font(.subheadline)
-                    TextField("New Reading", text: $newReading)
-                        .font(.system(size: 16, weight: .bold))
-                        .keyboardType(.decimalPad)
+                VStack(spacing: 8) {
+                    Text("New Meter")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+                    
+                    TextField("", text: $newReading)
+                        .font(.system(size: 34, weight: .regular))
+                        .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .frame(width: 120, height: 50)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
-                        .focused($isInputActive)
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .newReading)
+                        .frame(height: 60)
+                        .background(Color(white: 0.15))
+                        .cornerRadius(12)
                 }
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal)
             
-            Text(LocalizedStringKey("Session kWh = (New Meter - Previous Meter) × 0.402"))
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal)
+            Text("Session kWh = (New Meter - Previous Meter) × 0,402")
+                .font(.system(size: 15))
+                .foregroundColor(Color(white: 0.6))
         }
     }
     
-    private var topButtonRow: some View {
-        HStack(spacing: 8) {
-            calculateButton
-            photoButton
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.horizontal, 10)
-    }
-    
-    private var calculateButton: some View {
-        ImageButton(color: .green, width: 185, height: 120, action: calculateUsage) {
-            Text("Calculate")
-        }
-    }
-    
-    private var photoButton: some View {
-        ImageButton(color: .blue, width: 185, height: 120, action: {
-            if selectedImage != nil {
-                selectedImage = nil
-            }
-            showingCamera = true
-        }) {
-            HStack(spacing: 15) {
-                Image(systemName: selectedImage == nil ? "camera" : "arrow.counterclockwise")
-                    .imageScale(.large)
-                Text(selectedImage == nil ? "Add Photo" : "Retake Photo")
-            }
-        }
-    }
-    
-    private var calculationSection: some View {
-        VStack(spacing: 10) {
-            Text("Amount to Pay")
-                .font(.headline)
-            Text(String(format: "₪%.2f", calculatedCost))
-                .font(.system(size: 28, weight: .bold))
-        }
-        .padding()
-    }
-    
-    private var photoSection: some View {
-        VStack(spacing: 25) {
-            if let image = selectedImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 200)
-                    .cornerRadius(10)
-                    .overlay(
-                        Button(action: {
-                            selectedImage = nil
-                            showingCamera = true
-                        }) {
-                            Image(systemName: "arrow.counterclockwise.circle.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
-                                .background(Color.black.opacity(0.7))
-                                .clipShape(Circle())
-                        }
-                        .padding(8),
-                        alignment: .topTrailing
+    private var buttonSection: some View {
+        HStack(spacing: 12) {
+            // Calculate Button
+            Button(action: calculateUsage) {
+                Text("Calculate")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.blue)
                     )
-                    .onTapGesture {
-                        showingFullScreenPhoto = true
-                    }
             }
             
-            if selectedImage == nil {
-                Text("Take a clear photo of your meter reading")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            // Add Photo Button
+            Button(action: {
+                if selectedImage != nil {
+                    selectedImage = nil
+                }
+                showingCamera = true
+            }) {
+                HStack {
+                    Image(systemName: "camera")
+                        .font(.system(size: 20))
+                    Text("Add Photo")
+                        .font(.system(size: 20, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue, lineWidth: 2)
+                )
             }
         }
         .padding(.horizontal)
-        .sheet(isPresented: $showingFullScreenPhoto) {
-            if let image = selectedImage {
-                FullScreenPhotoView(image: image, isPresented: $showingFullScreenPhoto)
+    }
+    
+    private var photoInstructionText: some View {
+        Text("Take a clear photo of your meter reading")
+            .font(.system(size: 15))
+            .foregroundColor(Color(white: 0.6))
+    }
+    
+    private var calculationSection: some View {
+        VStack(spacing: 16) {
+            VStack(spacing: 8) {
+                Text(String(format: "₪%.2f", calculatedCost))
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.white)
             }
+            .padding()
+            
+            saveButton
         }
     }
     
+    private func photoPreviewSection(_ image: UIImage) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFit()
+            .frame(height: 200)
+            .cornerRadius(12)
+            .overlay(
+                Button(action: {
+                    selectedImage = nil
+                    showingCamera = true
+                }) {
+                    Image(systemName: "arrow.counterclockwise.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                        .background(Color.black.opacity(0.7))
+                        .clipShape(Circle())
+                }
+                .padding(8),
+                alignment: .topTrailing
+            )
+            .padding(.horizontal)
+            .onTapGesture {
+                showingFullScreenPhoto = true
+            }
+    }
+    
     private var saveButton: some View {
-        ImageButton(color: .blue, width: UIScreen.main.bounds.width * 0.95, height: 120, imageName: "ButtonSave", action: saveSession) {
-            EmptyView()
+        Button(action: saveSession) {
+            ZStack {
+                Circle()
+                    .fill(Color(red: 76/255, green: 175/255, blue: 80/255))
+                    .frame(width: 120, height: 120)
+                    .shadow(color: Color(red: 76/255, green: 175/255, blue: 80/255).opacity(0.3), radius: 10, x: 0, y: 5)
+                
+                VStack(spacing: 8) {
+                    Image(systemName: "square.fill")
+                        .resizable()
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 20, height: 15)
+                                .foregroundColor(Color(red: 76/255, green: 175/255, blue: 80/255))
+                                .offset(y: -8),
+                            alignment: .top
+                        )
+                    Text("SAVE")
+                        .font(.system(size: 24, weight: .bold))
+                }
+                .foregroundColor(.white)
+            }
         }
         .disabled(!showingCalculation)
+    }
+    
+    private func validateInputs() {
+        guard !newReading.isEmpty && (shouldShowPreviousReadingInput ? !previousReadingInput.isEmpty : true) else { return }
+        
+        let newValue = Double(newReading.replacingOccurrences(of: ",", with: "")) ?? 0
+        if newValue <= previousReading {
+            withAnimation(.default) {
+                isValidationError = true
+                viewModel.errorMessage = "New reading must be higher than previous reading"
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                isValidationError = false
+            }
+        }
     }
     
     private func calculateUsage() {
@@ -304,30 +349,34 @@ struct NewSessionView: View {
         let cleanNewReading = newReading.replacingOccurrences(of: ",", with: "")
         guard let newReadingValue = Double(cleanNewReading) else { return }
         
-        // Save image if exists
         var photoURL: URL?
         if let image = selectedImage {
             photoURL = saveImage(image)
         }
         
-        // Create the session
         viewModel.createSession(
             previousReading: previousReading,
             newReading: newReadingValue,
             photoURL: photoURL
         )
         
-        // Show success message
-        viewModel.errorMessage = "Session saved successfully!"
+        withAnimation {
+            showingSaveConfirmation = true
+        }
         
-        // Reset form after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                showingSaveConfirmation = false
+            }
             newReading = ""
             previousReadingInput = ""
             selectedImage = nil
             showingCalculation = false
-            viewModel.errorMessage = nil
         }
+        
+        // Trigger success haptic
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
     }
     
     private func saveImage(_ image: UIImage) -> URL? {
@@ -343,6 +392,57 @@ struct NewSessionView: View {
             viewModel.errorMessage = "Failed to save image: \(error.localizedDescription)"
             return nil
         }
+    }
+}
+
+// MARK: - Supporting Views
+
+struct SaveConfirmationBanner: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                Text("Session saved to history")
+                    .font(.subheadline.bold())
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 4)
+            .padding(.bottom, 32)
+        }
+        .transition(.move(edge: .bottom))
+    }
+}
+
+// MARK: - View Modifiers
+
+struct ShakeEffect: GeometryEffect {
+    var amount: CGFloat = 10
+    var shakesPerUnit = 3
+    var animatableData: CGFloat
+    
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX:
+            amount * sin(animatableData * .pi * CGFloat(shakesPerUnit)),
+            y: 0))
+    }
+}
+
+extension View {
+    func shake(_ trigger: Bool) -> some View {
+        modifier(ShakeModifier(trigger: trigger))
+    }
+}
+
+struct ShakeModifier: ViewModifier {
+    let trigger: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .modifier(ShakeEffect(animatableData: trigger ? 1 : 0))
     }
 }
 
