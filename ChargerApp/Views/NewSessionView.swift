@@ -56,12 +56,12 @@ struct NewSessionView: View {
     @ObservedObject var viewModel: ChargingSessionViewModel
     @State private var newReading: String = ""
     @State private var previousReadingInput: String = ""
-    @State private var showingCameraHandler = false
+    @State private var showingCamera = false
+    @State private var showingImagePicker = false
     @State private var selectedImage: UIImage?
     @State private var showingCalculation = false
     @State private var calculatedKwh: Double = 0
     @State private var calculatedCost: Double = 0
-    @State private var isProcessingOCR = false
     @FocusState private var isInputActive: Bool
     
     private var shouldShowPreviousReadingInput: Bool {
@@ -99,8 +99,11 @@ struct NewSessionView: View {
                 isInputActive = false
             }
         }
-        .sheet(isPresented: $showingCameraHandler) {
-            CameraHandler(selectedImage: $selectedImage)
+        .sheet(isPresented: $showingCamera) {
+            ImagePicker(image: $selectedImage, sourceType: .camera, showingImagePicker: $showingImagePicker)
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            PhotoPicker(image: $selectedImage)
         }
         .alert(item: Binding(
             get: { viewModel.errorMessage.map { ErrorWrapper(error: $0, isError: $0.contains("Error") || $0.contains("Failed")) } },
@@ -207,7 +210,12 @@ struct NewSessionView: View {
     }
     
     private var photoButton: some View {
-        ImageButton(color: .blue, width: 185, height: 120, action: { showingCameraHandler = true }) {
+        ImageButton(color: .blue, width: 185, height: 120, action: {
+            if selectedImage != nil {
+                selectedImage = nil
+            }
+            showingCamera = true
+        }) {
             HStack(spacing: 15) {
                 Image(systemName: selectedImage == nil ? "camera" : "arrow.counterclockwise")
                     .imageScale(.large)
@@ -235,7 +243,17 @@ struct NewSessionView: View {
                     .frame(height: 200)
                     .cornerRadius(10)
                     .overlay(
-                        deletePhotoButton,
+                        Button(action: {
+                            selectedImage = nil
+                            showingCamera = true
+                        }) {
+                            Image(systemName: "arrow.counterclockwise.circle.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(.white)
+                                .background(Color.black.opacity(0.7))
+                                .clipShape(Circle())
+                        }
+                        .padding(8),
                         alignment: .topTrailing
                     )
             }
@@ -247,16 +265,6 @@ struct NewSessionView: View {
             }
         }
         .padding(.horizontal)
-    }
-    
-    private var deletePhotoButton: some View {
-        Button(action: { selectedImage = nil }) {
-            Image(systemName: "xmark.circle.fill")
-                .foregroundColor(.white)
-                .background(Color.black.opacity(0.7))
-                .clipShape(Circle())
-        }
-        .padding(8)
     }
     
     private var saveButton: some View {
@@ -325,27 +333,6 @@ struct NewSessionView: View {
         } catch {
             viewModel.errorMessage = "Failed to save image: \(error.localizedDescription)"
             return nil
-        }
-    }
-    
-    private func processImageOCR(_ image: UIImage) {
-        isProcessingOCR = true
-        OCRService.extractMeterReading(from: image) { result in
-            DispatchQueue.main.async {
-                isProcessingOCR = false
-                switch result {
-                case .success(let reading):
-                    newReading = String(format: "%.0f", reading)
-                    calculateUsage()
-                case .failure(let error):
-                    // Only show error message if it's not a "no reading found" error
-                    if case .noValidReading = error {
-                        // Silently ignore when no reading is found
-                        return
-                    }
-                    viewModel.errorMessage = String(format: NSLocalizedString("Failed to read meter: %@", comment: ""), error.localizedDescription)
-                }
-            }
         }
     }
 }

@@ -8,9 +8,13 @@ struct CameraHandler: View {
     @State private var showingImagePicker = false
     @State private var showingCamera = false
     @State private var showingPermissionAlert = false
+    @State private var showingPhotoLibraryPermissionAlert = false
     @State private var showingImageEditor = false
     @State private var sourceType: UIImagePickerController.SourceType = .camera
     @State private var editedImage: UIImage?
+    
+    private let buttonWidth: CGFloat = 160
+    private let buttonHeight: CGFloat = 50
     
     var body: some View {
         NavigationView {
@@ -29,58 +33,55 @@ struct CameraHandler: View {
                         showingImageEditor = true
                     }) {
                         Label("Edit", systemImage: "crop")
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                            .frame(width: buttonWidth, height: buttonHeight)
                             .background(Color.green)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .padding(.horizontal)
                     
                     // Retake/Choose Different Photo button
                     Button(action: {
                         selectedImage = nil
                     }) {
                         Label("Retake Photo", systemImage: "arrow.counterclockwise")
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                            .frame(width: buttonWidth, height: buttonHeight)
                             .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .padding(.horizontal)
                 } else {
                     // Camera and Photo Library buttons
                     VStack(spacing: 20) {
-                        Button(action: {
-                            checkCameraPermission()
-                        }) {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .font(.title2)
-                                Text("Take Photo")
+                        HStack(spacing: 15) {
+                            Button(action: {
+                                checkCameraPermission()
+                            }) {
+                                HStack {
+                                    Image(systemName: "camera.fill")
+                                        .font(.title2)
+                                    Text("Take Photo")
+                                }
+                                .frame(width: buttonWidth, height: buttonHeight)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                        }
-                        
-                        Button(action: {
-                            showingImagePicker = true
-                        }) {
-                            HStack {
-                                Image(systemName: "photo.on.rectangle")
-                                    .font(.title2)
-                                Text("Choose from Library")
+                            
+                            Button(action: {
+                                checkPhotoLibraryPermission()
+                            }) {
+                                HStack {
+                                    Image(systemName: "photo.on.rectangle")
+                                        .font(.title2)
+                                    Text("Choose from Library")
+                                }
+                                .frame(width: buttonWidth, height: buttonHeight)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
                         }
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .padding()
                     
@@ -112,7 +113,7 @@ struct CameraHandler: View {
             PhotoPicker(image: $selectedImage)
         }
         .sheet(isPresented: $showingCamera) {
-            ImagePicker(image: $selectedImage, sourceType: .camera)
+            ImagePicker(image: $selectedImage, sourceType: .camera, showingImagePicker: $showingImagePicker)
         }
         .sheet(isPresented: $showingImageEditor) {
             if let image = selectedImage {
@@ -122,12 +123,24 @@ struct CameraHandler: View {
         .alert("Camera Access Required", isPresented: $showingPermissionAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Settings") {
-                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(settingsURL)
-                }
+                openSettings()
             }
         } message: {
             Text("Please allow camera access in Settings to take photos of your meter readings.")
+        }
+        .alert("Photo Library Access Required", isPresented: $showingPhotoLibraryPermissionAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Settings") {
+                openSettings()
+            }
+        } message: {
+            Text("Please allow photo library access in Settings to choose photos.")
+        }
+    }
+    
+    private func openSettings() {
+        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsURL)
         }
     }
     
@@ -145,6 +158,25 @@ struct CameraHandler: View {
             }
         case .denied, .restricted:
             showingPermissionAlert = true
+        @unknown default:
+            break
+        }
+    }
+    
+    private func checkPhotoLibraryPermission() {
+        switch PHPhotoLibrary.authorizationStatus(for: .readWrite) {
+        case .authorized, .limited:
+            showingImagePicker = true
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+                DispatchQueue.main.async {
+                    if status == .authorized || status == .limited {
+                        showingImagePicker = true
+                    }
+                }
+            }
+        case .denied, .restricted:
+            showingPhotoLibraryPermissionAlert = true
         @unknown default:
             break
         }
@@ -198,11 +230,57 @@ struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     let sourceType: UIImagePickerController.SourceType
     @Environment(\.presentationMode) var presentationMode
+    @Binding var showingImagePicker: Bool
     
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
         picker.sourceType = sourceType
+        picker.allowsEditing = false
+        
+        if sourceType == .camera {
+            picker.cameraCaptureMode = .photo
+            picker.showsCameraControls = true
+            picker.cameraDevice = .rear
+            picker.cameraFlashMode = .auto
+            picker.mediaTypes = ["public.image"]
+            
+            // Add custom overlay view with photo library button
+            let overlayView = UIView(frame: picker.view.bounds)
+            overlayView.isUserInteractionEnabled = true
+            overlayView.backgroundColor = .clear
+            
+            // Photo Library Button
+            let libraryButton = UIButton(type: .system)
+            libraryButton.setImage(UIImage(systemName: "photo.on.rectangle")?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 30)), for: .normal)
+            libraryButton.tintColor = .white
+            libraryButton.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+            libraryButton.layer.cornerRadius = 35
+            libraryButton.isUserInteractionEnabled = true
+            
+            // Position the button in the top right
+            let buttonSize: CGFloat = 70
+            let topPadding: CGFloat = 40
+            let rightPadding: CGFloat = 20
+            
+            libraryButton.frame = CGRect(
+                x: picker.view.bounds.width - buttonSize - rightPadding,
+                y: topPadding,
+                width: buttonSize,
+                height: buttonSize
+            )
+            
+            libraryButton.addTarget(context.coordinator, action: #selector(Coordinator.switchToPhotoLibrary), for: .touchUpInside)
+            
+            overlayView.addSubview(libraryButton)
+            
+            // Make the overlay view ignore touches except for the button
+            overlayView.isUserInteractionEnabled = true
+            overlayView.frame = CGRect(x: 0, y: 0, width: picker.view.bounds.width, height: 150)
+            
+            picker.cameraOverlayView = overlayView
+        }
+        
         return picker
     }
     
@@ -219,9 +297,18 @@ struct ImagePicker: UIViewControllerRepresentable {
             self.parent = parent
         }
         
+        @objc func switchToPhotoLibrary() {
+            parent.presentationMode.wrappedValue.dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.parent.showingImagePicker = true
+            }
+        }
+        
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let image = info[.originalImage] as? UIImage {
-                parent.image = image
+                DispatchQueue.main.async {
+                    self.parent.image = image
+                }
             }
             parent.presentationMode.wrappedValue.dismiss()
         }
