@@ -1,0 +1,66 @@
+/* 
+  Localizable.strings
+  ChargerApp
+*/
+
+// General
+"Cancel" = "ביטול";
+"Done" = "סיום";
+"Save" = "שמירה";
+"Delete" = "מחיקה";
+"Edit" = "עריכה";
+"Share" = "שיתוף";
+
+// Tabs
+"Usage" = "שימוש";
+"Analytics" = "ניתוח נתונים";
+
+// Settings
+"Settings" = "הגדרות";
+"Electricity Rate" = "תעריף חשמל";
+"Price per kWh" = "מחיר לקוט\"ש";
+"Save Rate" = "שמירת תעריף";
+"Version" = "גרסה";
+"Default Rate" = "תעריף ברירת מחדל";
+"Reset to Default" = "איפוס לברירת מחדל";
+"Help" = "עזרה";
+
+// New Session
+"Electricity Usage & Payment" = "צריכת חשמל ותשלום";
+"Previous Meter" = "מונה קודם";
+"New Reading" = "קריאה חדשה";
+"Session kWh = (New Meter - Previous Meter) × 0.402" = "קוט\"ש = (קריאה חדשה - מונה קודם) × 0.402";
+"Calculate" = "חישוב";
+"Amount to Pay" = "סכום לתשלום";
+"Add Meter Photo" = "הוספת תמונת מונה";
+"Retake Photo" = "צילום מחדש";
+"Take a clear photo of your meter reading" = "צלם תמונה ברורה של קריאת המונה";
+
+// Sessions
+"Sessions" = "סשנים";
+"Paid" = "שולם";
+"Unpaid" = "לא שולם";
+"Mark Paid" = "סמן כשולם";
+"Mark Unpaid" = "סמן כלא שולם";
+"Delete Session" = "מחיקת סשן";
+"Are you sure you want to delete this session? This action cannot be undone." = "האם אתה בטוח שברצונך למחוק סשן זה? פעולה זו אינה ניתנת לביטול.";
+
+// Session Details
+"Session Details" = "פרטי סשן";
+"Previous Reading:" = "קריאה קודמת:";
+"New Reading:" = "קריאה חדשה:";
+"Energy Used:" = "צריכת אנרגיה:";
+"Cost:" = "עלות:";
+"Status:" = "סטטוס:";
+"Notes" = "הערות";
+"No notes" = "אין הערות";
+"Share Session Details" = "שיתוף פרטי סשן";
+
+// Camera
+"Meter Photo" = "תמונת מונה";
+"Take Photo" = "צלם תמונה";
+"Choose from Library" = "בחר מהספרייה";
+"Make sure the numbers are clearly visible and well-lit" = "ודא שהמספרים נראים בבירור ובתאורה טובה";
+"Use Photo" = "השתמש בתמונה";
+"Camera Access Required" = "נדרש גישה למצלמה";
+"Please allow camera access in Settings to take photos of your meter readings." = "אנא אפשר גישה למצלמה בהגדרות כדי לצלם את קריאות המונה."; 

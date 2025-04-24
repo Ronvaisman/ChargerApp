@@ -8,6 +8,7 @@ struct NewSessionView: View {
     @State private var showingCalculation = false
     @State private var calculatedKwh: Double = 0
     @State private var calculatedCost: Double = 0
+    @FocusState private var isInputActive: Bool
     
     private var previousReading: Double {
         viewModel.sessions.first?.newReading ?? 0
@@ -26,27 +27,33 @@ struct NewSessionView: View {
                     
                     // Meter readings section
                     VStack(alignment: .leading, spacing: 15) {
-                        Text("Previous Meter")
-                            .font(.headline)
-                        
                         HStack {
-                            Text("\(Int(previousReading))")
-                                .font(.system(size: 32, weight: .bold))
-                                .frame(width: 120, alignment: .center)
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .cornerRadius(10)
+                            VStack(alignment: .center) {
+                                Text("Previous Meter")
+                                    .font(.subheadline)
+                                Text("\(Int(previousReading))")
+                                    .font(.system(size: 32, weight: .bold))
+                                    .frame(width: 120, alignment: .center)
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(10)
+                            }
+                            .frame(maxWidth: .infinity)
                             
-                            Spacer()
-                            
-                            TextField("New Reading", text: $newReading)
-                                .font(.system(size: 32, weight: .bold))
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.center)
-                                .frame(width: 120)
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .cornerRadius(10)
+                            VStack(alignment: .center) {
+                                Text("New Meter")
+                                    .font(.subheadline)
+                                TextField("New Reading", text: $newReading)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.center)
+                                    .frame(width: 120)
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(10)
+                                    .focused($isInputActive)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                         .padding(.horizontal)
                         
@@ -133,17 +140,26 @@ struct NewSessionView: View {
                 }
                 .padding(.vertical)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isInputActive = false
+                    }
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
         }
         .sheet(isPresented: $showingCameraHandler) {
             CameraHandler(selectedImage: $selectedImage)
         }
         .alert(item: Binding(
-            get: { viewModel.errorMessage.map { ErrorWrapper(error: $0) } },
+            get: { viewModel.errorMessage.map { ErrorWrapper(error: $0, isError: $0.contains("Error") || $0.contains("Failed")) } },
             set: { _ in viewModel.errorMessage = nil }
         )) { errorWrapper in
             Alert(
-                title: Text("Error"),
+                title: Text(errorWrapper.isError ? "Error" : "Success"),
                 message: Text(errorWrapper.error),
                 dismissButton: .default(Text("OK"))
             )
@@ -175,16 +191,23 @@ struct NewSessionView: View {
             photoURL = saveImage(image)
         }
         
+        // Create the session
         viewModel.createSession(
             previousReading: previousReading,
             newReading: newReadingValue,
             photoURL: photoURL
         )
         
-        // Reset form
-        newReading = ""
-        selectedImage = nil
-        showingCalculation = false
+        // Show success message
+        viewModel.errorMessage = "Session saved successfully!"
+        
+        // Reset form after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            newReading = ""
+            selectedImage = nil
+            showingCalculation = false
+            viewModel.errorMessage = nil
+        }
     }
     
     private func saveImage(_ image: UIImage) -> URL? {
@@ -207,4 +230,5 @@ struct NewSessionView: View {
 struct ErrorWrapper: Identifiable {
     let id = UUID()
     let error: String
+    let isError: Bool
 } 

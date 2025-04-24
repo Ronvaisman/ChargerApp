@@ -1,0 +1,53 @@
+/* 
+  Localizable.strings
+  ChargerApp
+*/
+
+// General
+"Cancel" = "Cancel";
+"Done" = "Done";
+"Save" = "Save";
+"Delete" = "Delete";
+"Edit" = "Edit";
+"Share" = "Share";
+
+// New Session
+"Electricity Usage & Payment" = "Electricity Usage & Payment";
+"Previous Meter" = "Previous Meter";
+"New Reading" = "New Reading";
+"Session kWh = (New Meter - Previous Meter) × 0.402" = "Session kWh = (New Meter - Previous Meter) × 0.402";
+"Calculate" = "Calculate";
+"Amount to Pay" = "Amount to Pay";
+"Add Meter Photo" = "Add Meter Photo";
+"Retake Photo" = "Retake Photo";
+"Take a clear photo of your meter reading" = "Take a clear photo of your meter reading";
+
+// Sessions
+"Sessions" = "Sessions";
+"Paid" = "Paid";
+"Unpaid" = "Unpaid";
+"Mark Paid" = "Mark Paid";
+"Mark Unpaid" = "Mark Unpaid";
+"Delete Session" = "Delete Session";
+"Are you sure you want to delete this session? This action cannot be undone." = "Are you sure you want to delete this session? This action cannot be undone.";
+
+// Session Details
+"Session Details" = "Session Details";
+"Previous Reading:" = "Previous Reading:";
+"New Reading:" = "New Reading:";
+"Energy Used:" = "Energy Used:";
+"Cost:" = "Cost:";
+"Status:" = "Status:";
+"Notes" = "Notes";
+"No notes" = "No notes";
+"Share Session Details" = "Share Session Details";
+
+// Camera
+"Meter Photo" = "Meter Photo";
+"Take Photo" = "Take Photo";
+"Choose from Library" = "Choose from Library";
+"Make sure the numbers are clearly visible and well-lit" = "Make sure the numbers are clearly visible and well-lit";
+"Use Photo" = "Use Photo";
+"Camera Access Required" = "Camera Access Required";
+"Please allow camera access in Settings to take photos of your meter readings." = "Please allow camera access in Settings to take photos of your meter readings.";
+"Settings" = "Settings"; 

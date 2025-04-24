@@ -33,13 +33,13 @@ struct SessionsView: View {
                         }
                 }
             }
-            .navigationTitle("Sessions")
+            .navigationTitle(Text("Sessions"))
             .sheet(isPresented: $showingSessionDetail) {
                 if let session = selectedSession {
                     SessionDetailView(session: session, viewModel: viewModel)
                 }
             }
-            .alert("Delete Session", isPresented: $showingDeleteAlert) {
+            .alert(Text("Delete Session"), isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let session = sessionToDelete {
@@ -50,6 +50,7 @@ struct SessionsView: View {
                 Text("Are you sure you want to delete this session? This action cannot be undone.")
             }
         }
+        .localized()
     }
 }
 
