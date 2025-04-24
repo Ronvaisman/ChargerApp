@@ -53,7 +53,6 @@ struct CameraHandler: View {
                         }
                         
                         Button(action: {
-                            sourceType = .photoLibrary
                             showingImagePicker = true
                         }) {
                             HStack {
@@ -95,7 +94,10 @@ struct CameraHandler: View {
             )
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(image: $selectedImage, sourceType: sourceType)
+            PhotoPicker(image: $selectedImage)
+        }
+        .sheet(isPresented: $showingCamera) {
+            ImagePicker(image: $selectedImage, sourceType: .camera)
         }
         .alert("Camera Access Required", isPresented: $showingPermissionAlert) {
             Button("Cancel", role: .cancel) { }
@@ -112,14 +114,12 @@ struct CameraHandler: View {
     private func checkCameraPermission() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            sourceType = .camera
-            showingImagePicker = true
+            showingCamera = true
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 if granted {
                     DispatchQueue.main.async {
-                        sourceType = .camera
-                        showingImagePicker = true
+                        showingCamera = true
                     }
                 }
             }
@@ -127,6 +127,49 @@ struct CameraHandler: View {
             showingPermissionAlert = true
         @unknown default:
             break
+        }
+    }
+}
+
+struct PhotoPicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.presentationMode) var presentationMode
+    
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images
+        config.selectionLimit = 1
+        
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: PhotoPicker
+        
+        init(_ parent: PhotoPicker) {
+            self.parent = parent
+        }
+        
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            parent.presentationMode.wrappedValue.dismiss()
+            
+            guard let provider = results.first?.itemProvider else { return }
+            
+            if provider.canLoadObject(ofClass: UIImage.self) {
+                provider.loadObject(ofClass: UIImage.self) { image, _ in
+                    DispatchQueue.main.async {
+                        self.parent.image = image as? UIImage
+                    }
+                }
+            }
         }
     }
 }
