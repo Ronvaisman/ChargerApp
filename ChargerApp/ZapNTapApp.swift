@@ -8,13 +8,15 @@
 import SwiftUI
 
 @main
-struct ChargerAppApp: App {
+struct ZapNTapApp: App {
     let persistenceController = PersistenceController.shared
+    @StateObject private var viewModel = ChargingSessionViewModel()
 
     var body: some Scene {
         WindowGroup {
-            ContentView(context: persistenceController.container.viewContext)
+            ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .environmentObject(viewModel)
         }
     }
 }

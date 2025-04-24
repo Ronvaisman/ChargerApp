@@ -138,7 +138,7 @@ struct NewSessionView: View {
     }
     
     private var headerSection: some View {
-        Text("EV Charging Payment")
+        Text("Zap-n-Tap")
             .font(.title)
             .fontWeight(.bold)
             .foregroundColor(.white)
