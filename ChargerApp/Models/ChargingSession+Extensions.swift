@@ -13,9 +13,17 @@ extension ChargingSession {
     var formattedDate: String {
         guard let timestamp = timestamp else { return NSLocalizedString("Unknown Date", comment: "") }
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        formatter.locale = .current
+        
+        // Check if the locale is Hebrew
+        if formatter.locale.identifier.hasPrefix("he") {
+            formatter.dateFormat = "dd/MM/yy HH:mm"
+        } else {
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+        }
+        
+        formatter.locale = Locale(identifier: NSLocalizedString("LOCALE", comment: ""))
+        formatter.doesRelativeDateFormatting = true
         return formatter.string(from: timestamp)
     }
     

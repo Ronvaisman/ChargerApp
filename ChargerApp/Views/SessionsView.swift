@@ -98,22 +98,34 @@ struct SessionDetailView: View {
     @State private var notes: String
     @State private var isEditingNotes = false
     @State private var showingShareSheet = false
+    @State private var showingCameraHandler = false
+    @State private var showingPhotoOptions = false
+    @State private var selectedImage: UIImage?
     
     init(session: ChargingSession, viewModel: ChargingSessionViewModel) {
         self.session = session
         self.viewModel = viewModel
         _notes = State(initialValue: session.notes ?? "")
+        if let photoURL = session.photoURL {
+            _selectedImage = State(initialValue: UIImage(contentsOfFile: photoURL.path))
+        }
     }
     
     var shareMessage: String {
-        """
+        var message = """
         \(NSLocalizedString("EV Charging Session", comment: "")) - \(session.formattedDate)
         \(NSLocalizedString("Previous Reading:", comment: "")) \(Int(session.previousReading)) \(NSLocalizedString("kWh", comment: ""))
         \(NSLocalizedString("New Reading:", comment: "")) \(Int(session.newReading)) \(NSLocalizedString("kWh", comment: ""))
         \(NSLocalizedString("Energy Used:", comment: "")) \(session.formattedKWh)
-        \(NSLocalizedString("Cost:", comment: "")) \(session.formattedCost)
-        \(NSLocalizedString("Status:", comment: "")) \(NSLocalizedString(session.isPaid ? "Paid" : "Unpaid", comment: ""))
+        \(NSLocalizedString("Cost:", comment: "")) **\(session.formattedCost)**
+        \(NSLocalizedString("Status:", comment: "")) **\(NSLocalizedString(session.isPaid ? "Paid" : "Unpaid", comment: ""))**
         """
+        
+        if let notes = session.notes, !notes.isEmpty {
+            message += "\n\(NSLocalizedString("Notes:", comment: "")) \(notes)"
+        }
+        
+        return message
     }
     
     var shareItems: [Any] {
@@ -171,26 +183,74 @@ struct SessionDetailView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
                     
-                    // Payment Status
-                    HStack {
-                        Text(LocalizedStringKey("Status:"))
-                        Spacer()
-                        Text(LocalizedStringKey(session.isPaid ? "Paid" : "Unpaid"))
-                            .foregroundColor(session.isPaid ? .green : .orange)
-                            .fontWeight(.medium)
+                    // Payment Status with Toggle
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text(LocalizedStringKey("Status:"))
+                            Spacer()
+                            Button(action: {
+                                viewModel.togglePaidStatus(for: session)
+                            }) {
+                                HStack {
+                                    Image(systemName: session.isPaid ? "checkmark.circle.fill" : "circle")
+                                    Text(LocalizedStringKey(session.isPaid ? "Paid" : "Unpaid"))
+                                }
+                                .foregroundColor(session.isPaid ? .green : .orange)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                        }
                     }
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
                     
-                    // Photo if exists
-                    if let photoURL = session.photoURL,
-                       let uiImage = UIImage(contentsOfFile: photoURL.path) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 300)
-                            .cornerRadius(10)
+                    // Photo Section with Management Options
+                    VStack(spacing: 15) {
+                        if let image = selectedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 300)
+                                .cornerRadius(10)
+                                .overlay(
+                                    Button(action: { showingPhotoOptions = true }) {
+                                        Image(systemName: "ellipsis.circle.fill")
+                                            .font(.title)
+                                            .foregroundColor(.white)
+                                            .background(Color.black.opacity(0.7))
+                                            .clipShape(Circle())
+                                    }
+                                    .padding(8),
+                                    alignment: .topTrailing
+                                )
+                        } else {
+                            Button(action: { showingCameraHandler = true }) {
+                                VStack {
+                                    Image(systemName: "camera")
+                                        .font(.largeTitle)
+                                        .padding()
+                                    Text(LocalizedStringKey("Add Meter Photo"))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .foregroundColor(.blue)
+                                .cornerRadius(10)
+                            }
+                        }
+                    }
+                    .confirmationDialog(LocalizedStringKey("Photo Options"), isPresented: $showingPhotoOptions) {
+                        Button(LocalizedStringKey("Replace Photo")) {
+                            showingCameraHandler = true
+                        }
+                        Button(LocalizedStringKey("Remove Photo"), role: .destructive) {
+                            viewModel.removePhoto(from: session)
+                            selectedImage = nil
+                        }
+                        Button(LocalizedStringKey("Cancel"), role: .cancel) { }
                     }
                     
                     // Notes
@@ -229,7 +289,7 @@ struct SessionDetailView: View {
                     }) {
                         HStack {
                             Image(systemName: "square.and.arrow.up")
-                            Text("Share Session Details")
+                            Text(LocalizedStringKey("Share Session Details"))
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -241,13 +301,38 @@ struct SessionDetailView: View {
                 }
                 .padding()
             }
-            .navigationBarTitle("Session Details", displayMode: .inline)
+            .navigationBarTitle(LocalizedStringKey("Session Details"), displayMode: .inline)
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
             })
             .sheet(isPresented: $showingShareSheet) {
                 ShareSheet(activityItems: shareItems)
             }
+            .sheet(isPresented: $showingCameraHandler) {
+                CameraHandler(selectedImage: $selectedImage)
+                    .onDisappear {
+                        if let image = selectedImage {
+                            if let url = saveImage(image) {
+                                viewModel.updatePhoto(for: session, url: url)
+                            }
+                        }
+                    }
+            }
+        }
+    }
+    
+    private func saveImage(_ image: UIImage) -> URL? {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
+        let filename = UUID().uuidString + ".jpg"
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = documentsDirectory.appendingPathComponent(filename)
+        
+        do {
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
+            viewModel.errorMessage = "Failed to save image: \(error.localizedDescription)"
+            return nil
         }
     }
 }

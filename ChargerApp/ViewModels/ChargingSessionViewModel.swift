@@ -126,4 +126,36 @@ class ChargingSessionViewModel: ObservableObject {
             errorMessage = "Failed to delete session: \(error.localizedDescription)"
         }
     }
+    
+    func updatePhoto(for session: ChargingSession, url: URL) {
+        // Delete old photo if exists
+        if let oldURL = session.photoURL {
+            try? FileManager.default.removeItem(at: oldURL)
+        }
+        
+        session.photoURL = url
+        
+        do {
+            try context.save()
+            fetchSessions()
+        } catch {
+            errorMessage = "Failed to update photo: \(error.localizedDescription)"
+        }
+    }
+    
+    func removePhoto(from session: ChargingSession) {
+        // Delete the photo file
+        if let photoURL = session.photoURL {
+            try? FileManager.default.removeItem(at: photoURL)
+        }
+        
+        session.photoURL = nil
+        
+        do {
+            try context.save()
+            fetchSessions()
+        } catch {
+            errorMessage = "Failed to remove photo: \(error.localizedDescription)"
+        }
+    }
 } 

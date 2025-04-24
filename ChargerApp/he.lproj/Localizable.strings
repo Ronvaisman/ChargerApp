@@ -72,4 +72,15 @@
 "Today" = "היום";
 "Yesterday" = "אתמול";
 "kWh" = "קוט״ש";
-"ILS" = "₪"; 
+"ILS" = "₪";
+
+// Photo Management
+"Photo Options" = "אפשרויות תמונה";
+"Replace Photo" = "החלף תמונה";
+"Remove Photo" = "הסר תמונה";
+
+// Sharing
+"Notes:" = "הערות:";
+
+// System
+"LOCALE" = "he_IL"; 
