@@ -1,5 +1,57 @@
 import SwiftUI
 
+struct ImageButton: View {
+    let action: () -> Void
+    let content: AnyView
+    let color: Color
+    let width: CGFloat
+    let imageName: String
+    let height: CGFloat
+    
+    init(color: Color, width: CGFloat = UIScreen.main.bounds.width * 0.45, height: CGFloat = 120, imageName: String? = nil, action: @escaping () -> Void, @ViewBuilder content: () -> some View) {
+        self.color = color
+        self.width = width
+        self.height = height
+        self.action = action
+        self.content = AnyView(content())
+        if let name = imageName {
+            self.imageName = name
+        } else {
+            self.imageName = color == .green ? "ButtonGreen" : "ButtonBlue"
+        }
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            buttonContent
+        }
+    }
+    
+    private var buttonContent: some View {
+        ZStack {
+            buttonBackground
+            buttonLabel
+        }
+        .frame(height: height)
+    }
+    
+    private var buttonBackground: some View {
+        Image(imageName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: width, height: height)
+    }
+    
+    private var buttonLabel: some View {
+        content
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .minimumScaleFactor(0.5)
+            .lineLimit(1)
+    }
+}
+
 struct NewSessionView: View {
     @ObservedObject var viewModel: ChargingSessionViewModel
     @State private var newReading: String = ""
@@ -30,144 +82,7 @@ struct NewSessionView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Header
-                    Text(LocalizedStringKey("EV Charging Payment"))
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal)
-                    
-                    // Meter readings section
-                    VStack(alignment: .center, spacing: 15) {
-                        HStack {
-                            VStack(alignment: .center) {
-                                Text(LocalizedStringKey("Previous Meter"))
-                                    .font(.subheadline)
-                                if shouldShowPreviousReadingInput {
-                                    TextField("Previous Reading", text: $previousReadingInput)
-                                        .font(.system(size: 16, weight: .bold))
-                                        .keyboardType(.decimalPad)
-                                        .multilineTextAlignment(.center)
-                                        .frame(width: 120, height: 50)
-                                        .padding()
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(10)
-                                        .focused($isInputActive)
-                                        .onAppear {
-                                            previousReadingInput = "0"
-                                        }
-                                } else {
-                                    Text(String(format: "%.2f", previousReading))
-                                        .font(.system(size: 16, weight: .bold))
-                                        .frame(width: 120, height: 50)
-                                        .padding()
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(10)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            
-                            VStack(alignment: .center) {
-                                Text(LocalizedStringKey("New Meter"))
-                                    .font(.subheadline)
-                                TextField("New Reading", text: $newReading)
-                                    .font(.system(size: 16, weight: .bold))
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 120, height: 50)
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(10)
-                                    .focused($isInputActive)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal)
-                        
-                        Text(LocalizedStringKey("Session kWh = (New Meter - Previous Meter) × 0.402"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.horizontal)
-                    }
-                    
-                    // Calculate Button
-                    Button(action: calculateUsage) {
-                        Text("Calculate")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .cornerRadius(10)
-                    }
-                    .padding(.horizontal)
-                    
-                    if showingCalculation {
-                        VStack(spacing: 10) {
-                            Text("Amount to Pay")
-                                .font(.headline)
-                            Text(String(format: "₪%.2f", calculatedCost))
-                                .font(.system(size: 28, weight: .bold))
-                        }
-                        .padding()
-                    }
-                    
-                    // Photo section
-                    VStack(spacing: 15) {
-                        if let image = selectedImage {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                                .cornerRadius(10)
-                                .overlay(
-                                    Button(action: { selectedImage = nil }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.white)
-                                            .background(Color.black.opacity(0.7))
-                                            .clipShape(Circle())
-                                    }
-                                    .padding(8),
-                                    alignment: .topTrailing
-                                )
-                        }
-                        
-                        Button(action: { showingCameraHandler = true }) {
-                            HStack {
-                                Image(systemName: selectedImage == nil ? "camera" : "arrow.counterclockwise")
-                                Text(selectedImage == nil ? "Add Meter Photo" : "Retake Photo")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                        }
-                        
-                        if selectedImage == nil {
-                            Text("Take a clear photo of your meter reading")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    // Save Button
-                    Button(action: saveSession) {
-                        Text("Save")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .cornerRadius(10)
-                    }
-                    .padding(.horizontal)
-                    .disabled(!showingCalculation)
-                }
-                .padding(.vertical)
+                mainContent
             }
             .scrollDismissesKeyboard(.immediately)
             .toolbar {
@@ -197,6 +112,158 @@ struct NewSessionView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+    }
+    
+    private var mainContent: some View {
+        VStack(spacing: 30) {
+            headerSection
+            meterReadingsSection
+            topButtonRow
+            if showingCalculation { calculationSection }
+            photoSection
+            saveButton
+                .padding(.horizontal, 10)
+                .padding(.top, 10)
+        }
+        .padding(.vertical, 30)
+    }
+    
+    private var headerSection: some View {
+        Text(LocalizedStringKey("EV Charging Payment"))
+            .font(.title)
+            .fontWeight(.bold)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal)
+    }
+    
+    private var meterReadingsSection: some View {
+        VStack(alignment: .center, spacing: 15) {
+            HStack {
+                VStack(alignment: .center) {
+                    Text(LocalizedStringKey("Previous Meter"))
+                        .font(.subheadline)
+                    if shouldShowPreviousReadingInput {
+                        TextField("Previous Reading", text: $previousReadingInput)
+                            .font(.system(size: 16, weight: .bold))
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.center)
+                            .frame(width: 120, height: 50)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                            .focused($isInputActive)
+                            .onAppear {
+                                previousReadingInput = "0"
+                            }
+                    } else {
+                        Text(String(format: "%.2f", previousReading))
+                            .font(.system(size: 16, weight: .bold))
+                            .frame(width: 120, height: 50)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                
+                VStack(alignment: .center) {
+                    Text(LocalizedStringKey("New Meter"))
+                        .font(.subheadline)
+                    TextField("New Reading", text: $newReading)
+                        .font(.system(size: 16, weight: .bold))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 120, height: 50)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                        .focused($isInputActive)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal)
+            
+            Text(LocalizedStringKey("Session kWh = (New Meter - Previous Meter) × 0.402"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal)
+        }
+    }
+    
+    private var topButtonRow: some View {
+        HStack(spacing: 8) {
+            calculateButton
+            photoButton
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 10)
+    }
+    
+    private var calculateButton: some View {
+        ImageButton(color: .green, width: 185, height: 120, action: calculateUsage) {
+            Text("Calculate")
+        }
+    }
+    
+    private var photoButton: some View {
+        ImageButton(color: .blue, width: 185, height: 120, action: { showingCameraHandler = true }) {
+            HStack(spacing: 15) {
+                Image(systemName: selectedImage == nil ? "camera" : "arrow.counterclockwise")
+                    .imageScale(.large)
+                Text(selectedImage == nil ? "Add Photo" : "Retake Photo")
+            }
+        }
+    }
+    
+    private var calculationSection: some View {
+        VStack(spacing: 10) {
+            Text("Amount to Pay")
+                .font(.headline)
+            Text(String(format: "₪%.2f", calculatedCost))
+                .font(.system(size: 28, weight: .bold))
+        }
+        .padding()
+    }
+    
+    private var photoSection: some View {
+        VStack(spacing: 25) {
+            if let image = selectedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 200)
+                    .cornerRadius(10)
+                    .overlay(
+                        deletePhotoButton,
+                        alignment: .topTrailing
+                    )
+            }
+            
+            if selectedImage == nil {
+                Text("Take a clear photo of your meter reading")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    private var deletePhotoButton: some View {
+        Button(action: { selectedImage = nil }) {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundColor(.white)
+                .background(Color.black.opacity(0.7))
+                .clipShape(Circle())
+        }
+        .padding(8)
+    }
+    
+    private var saveButton: some View {
+        ImageButton(color: .blue, width: UIScreen.main.bounds.width * 0.95, height: 120, imageName: "ButtonSave", action: saveSession) {
+            EmptyView()
+        }
+        .disabled(!showingCalculation)
     }
     
     private func calculateUsage() {
@@ -288,4 +355,57 @@ struct ErrorWrapper: Identifiable {
     let id = UUID()
     let error: String
     let isError: Bool
+}
+
+struct GlossyButtonStyle: ViewModifier {
+    let color: Color
+    
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 200)
+            .padding(.vertical, 12)
+            .background(
+                ZStack {
+                    // Base layer with gradient
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    color,
+                                    color.opacity(0.8)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    
+                    // Inner border
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                    
+                    // Outer border
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(color.opacity(0.5), lineWidth: 1)
+                    
+                    // Shine effect
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0.4),
+                                    Color.white.opacity(0.0)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                        )
+                }
+            )
+    }
+}
+
+extension View {
+    func glossyButton(color: Color) -> some View {
+        self.modifier(GlossyButtonStyle(color: color))
+    }
 } 
