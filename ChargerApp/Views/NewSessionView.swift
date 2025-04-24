@@ -62,6 +62,7 @@ struct NewSessionView: View {
     @State private var showingCalculation = false
     @State private var calculatedKwh: Double = 0
     @State private var calculatedCost: Double = 0
+    @State private var showingFullScreenPhoto = false
     @FocusState private var isInputActive: Bool
     
     private var shouldShowPreviousReadingInput: Bool {
@@ -256,6 +257,9 @@ struct NewSessionView: View {
                         .padding(8),
                         alignment: .topTrailing
                     )
+                    .onTapGesture {
+                        showingFullScreenPhoto = true
+                    }
             }
             
             if selectedImage == nil {
@@ -265,6 +269,11 @@ struct NewSessionView: View {
             }
         }
         .padding(.horizontal)
+        .sheet(isPresented: $showingFullScreenPhoto) {
+            if let image = selectedImage {
+                FullScreenPhotoView(image: image, isPresented: $showingFullScreenPhoto)
+            }
+        }
     }
     
     private var saveButton: some View {

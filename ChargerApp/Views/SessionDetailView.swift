@@ -7,10 +7,12 @@ struct SessionDetailView: View {
     @State private var notes: String
     @State private var isEditingNotes = false
     @State private var showingShareSheet = false
-    @State private var showingCameraHandler = false
+    @State private var showingCamera = false
+    @State private var showingImagePicker = false
     @State private var showingPhotoOptions = false
     @State private var selectedImage: UIImage?
     @State private var ocrResults: String?
+    @State private var showingFullScreenPhoto = false
     
     init(session: ChargingSession, viewModel: ChargingSessionViewModel) {
         self.session = session
@@ -139,8 +141,11 @@ struct SessionDetailView: View {
                                 .padding(8),
                                 alignment: .topTrailing
                             )
+                            .onTapGesture {
+                                showingFullScreenPhoto = true
+                            }
                     } else {
-                        Button(action: { showingCameraHandler = true }) {
+                        Button(action: { showingCamera = true }) {
                             VStack {
                                 Image(systemName: "camera")
                                     .font(.largeTitle)
@@ -158,13 +163,38 @@ struct SessionDetailView: View {
                 }
                 .confirmationDialog(LocalizedStringKey("Photo Options"), isPresented: $showingPhotoOptions) {
                     Button(LocalizedStringKey("Replace Photo")) {
-                        showingCameraHandler = true
+                        showingCamera = true
                     }
                     Button(LocalizedStringKey("Remove Photo"), role: .destructive) {
                         viewModel.removePhoto(from: session)
                         selectedImage = nil
                     }
                     Button(LocalizedStringKey("Cancel"), role: .cancel) { }
+                }
+                .sheet(isPresented: $showingFullScreenPhoto) {
+                    if let image = selectedImage {
+                        FullScreenPhotoView(image: image, isPresented: $showingFullScreenPhoto)
+                    }
+                }
+                .sheet(isPresented: $showingCamera) {
+                    ImagePicker(image: $selectedImage, sourceType: .camera, showingImagePicker: $showingImagePicker)
+                        .onDisappear {
+                            if let image = selectedImage {
+                                if let url = saveImage(image) {
+                                    viewModel.updatePhoto(for: session, url: url)
+                                }
+                            }
+                        }
+                }
+                .sheet(isPresented: $showingImagePicker) {
+                    PhotoPicker(image: $selectedImage)
+                        .onDisappear {
+                            if let image = selectedImage {
+                                if let url = saveImage(image) {
+                                    viewModel.updatePhoto(for: session, url: url)
+                                }
+                            }
+                        }
                 }
                 
                 // Notes
@@ -236,16 +266,6 @@ struct SessionDetailView: View {
         })
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(activityItems: shareItems)
-        }
-        .sheet(isPresented: $showingCameraHandler) {
-            CameraHandler(selectedImage: $selectedImage)
-                .onDisappear {
-                    if let image = selectedImage {
-                        if let url = saveImage(image) {
-                            viewModel.updatePhoto(for: session, url: url)
-                        }
-                    }
-                }
         }
         .onAppear {
             if let image = selectedImage {

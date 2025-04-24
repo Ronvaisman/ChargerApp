@@ -1,0 +1,10 @@
+{
+  "frames": [
+    "usage_screen.png",
+    "sessions_screen.png",
+    "analytics_screen.png",
+    "settings_screen.png"
+  ],
+  "icon": "app_icon_1024.png",
+  "instructions": "Import these PNG frames and icon into Figma."
+}
